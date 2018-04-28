@@ -16,14 +16,14 @@
 projects, the data access of projects is made in arbitrary way and
 tend to be hard to maintain.</p>
 <p>This article raises a proposal to clear multi-projects architecture
-and provide global view JSON data of the whole website so than
-cross-project calling is easier, we call it bObject from the current
-context.</p>
+and provide global view of the whole website so that cross-project
+calling is easier, we call it bObject from the current context.</p>
 <p>bObject is a proxy server written in <a href="https://golang.org">golang</a>, it
 connects memcached instances for storage, all objects is stored in
 volatile memory, this policy makes the server easy to maintain and
 scale. Restarting memcached vacuumizes memory; Adding new memcached
-increases capacity.</p>
+increases capacity. Most data services are from cache instead of from
+remote backends, so that the speed can be promoted.</p>
 <p>bObject has backends, each backend is an old project that provides
 services to bObject server. bObject data access is listed as</p>
 <ol>
@@ -40,8 +40,15 @@ purging the cache by requesting bObject server&#39;s interface.</li>
 <li>backends also provide query/mutation URLs as bObject&#39;s proxy
 target, the response from them are checked to update cache.</li>
 </ol>
-<h2>Configure</h2><p>Sample configuration is like</p>
+<h2>Configure</h2><p>Sample yaml configuration is like</p>
 <pre><code class="language-yaml">version: 1
+ssl:
+  cert: some.cert
+  key: some.key
+
+auth:
+  bear-token: aaadsdd
+
 memcached:
   - address: 127.0.0.1:11211
   - address: 192.168.1.23:11211
