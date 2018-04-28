@@ -140,12 +140,13 @@ C-&gt;S
         &quot;name&quot;: &quot;hello&quot;,
         &quot;id&quot;: 1,
         &quot;gender&quot;: &quot;female&quot;
-     }
+     },
+     expire: 60 // expire is optional
   },
   ...
 ]
 </code></pre><p>Should be called by backends to purge/update caches, when <code>data</code> field
-request body misses the action would be to purge cache by oid</p>
+request body is not given the action would be to purge cache by oid</p>
 <h3>Delete object by oid</h3><pre><code>DELETE /v1/objects/:backend/:model/:pk
 </code></pre><p>Delete an object by key</p>
 <h3>Proxy query</h3><pre><code>GET /v1/query/:backend/:query?p1=a&amp;u=7
@@ -169,8 +170,9 @@ entry format) will be saved to cache. Backend can also respond entries
 containing only <code>oid</code> field, bObject can automatically lookup there
 data when needed.</p>
 <h2>Pubsub changes</h2><p>Sometimes backends have to get notified when other cache changed, they
-can subscribe to a Redis channel /objects/change, the received messages are</p>
-<pre><code class="language-json">{&quot;oid&quot;: &quot;relation/userfriends/1009&quot;}
+can subscribe to a Redis channel /objects/change/:backend/:model, the
+received messages are</p>
+<pre><code class="language-json">{&quot;oid&quot;: &quot;relation/userfriends/1009&quot;, &quot;action&quot;: &quot;purge&quot;} // ation can be purge|update
 </code></pre>
         <div class="push"></div>
       </div>
