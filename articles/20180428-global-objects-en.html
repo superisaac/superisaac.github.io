@@ -87,6 +87,9 @@ valid JSON documents.</li>
 memcached protocol, thrift and gRPC, here I only list a RESTful
 interface to make things simpler</p>
 <h3>Get object by oid</h3><pre><code>GET /v1/objects/:backend/:model/:pk
+
+if cache misses, the request is proxied to 
+GET :backend.target/:backend/:model/:pk
 </code></pre><p>Simply lookup the oid in cache or else resoult to backends.</p>
 <h3>Multi Get by oid list</h3><pre><code>GET /v1/objects/?objects=auth/user/1,relation/friends/1,relation/followers/1&amp;delim=,
 C&lt;-S
@@ -101,8 +104,10 @@ C&lt;-S
   },
   ...
 ]
+if some caches miss, the request is proxied to 
+GET :backend.target/:backend/?objects=.....
 </code></pre><p>Perform multiple GETs in a single round trip, the <code>objects</code> is separated by
-chars from <code>delim</code> field or <code>,</code>.</p>
+chars from <code>delim</code> field or COMMA.</p>
 <h3>Update objects by oid</h3><pre><code>POST /v1/objects/
 C-&gt;S
 [
