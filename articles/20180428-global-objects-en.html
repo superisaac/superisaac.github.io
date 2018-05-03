@@ -12,7 +12,7 @@
         <a href="/">Home</a>
       </nav>
       <div class="article">
-        <h1>A global object view for websites</h1><h2>Brief</h2><p>The continuous increment of website functions leads to multiple
+        <h1>ObjPuller: A global object view for websites</h1><h2>Brief</h2><p>The continuous increment of website functions leads to multiple
 projects, the data access of projects is made in arbitrary way and
 tend to be hard to maintain.</p>
 <p>This article raises a proposal to clear multi-projects architecture
@@ -174,8 +174,8 @@ containing only <code>oid</code> field, ObjPuller can automatically lookup their
 data when needed.</p>
 <h2>Pubsub changes</h2><p>Sometimes backends with to get notified when other relavent cache
 changed, they can subscribe to a websocket connection
-ws://<server>/objects/change/:backend, the received messages are a
-stream of entries.</server></p>
+ws://<code>server</code>/objects/change/:backend, the received messages are a
+stream of entries.</p>
 <pre><code class="language-json">{
   &quot;oid&quot;: &quot;relation/userfriends/1009&quot;,
   &quot;data&quot;: ...
