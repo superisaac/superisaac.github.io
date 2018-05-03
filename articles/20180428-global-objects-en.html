@@ -17,27 +17,29 @@ projects, the data access of projects is made in arbitrary way and
 tend to be hard to maintain.</p>
 <p>This article raises a proposal to clear multi-projects architecture
 and provide global view of the whole website so that cross-project
-calling is easier, we call it bObject from the current context.</p>
-<p>bObject is a proxy server written in <a href="https://golang.org">golang</a>, it
-connects memcached instances for storage, all objects is stored in
-volatile memory, this policy makes the server easy to maintain and
+calling is easier, we call it ObjPuller within the current context.</p>
+<p>ObjPuller is a proxy server written in <a href="https://golang.org">golang</a>,
+it connects memcached instances for storage, all objects is in it is
+volatile, this policy makes the server easy to maintain and
 scale. Restarting memcached vacuumizes memory; Adding new memcached
 increases capacity. Most data services are from cache instead of from
-remote backends, so that the speed can be promoted.</p>
-<p>bObject has backends, each backend is an old project that provides
-services to bObject server. bObject data access is listed as</p>
+remote backends, so that the fetching speed can keep high.</p>
+<p>ObjPuller has backends, each backend is a plain old project that
+exposing services to ObjPuller server. ObjPuller&#39;s typical data access
+functions are listed as the following.</p>
 <ol>
 <li>client request the data of key &quot;auth/user/1003&quot;, the key format is
 &quot;:backend/:model/:pk&quot;.</li>
-<li>bObject server try to lookup the cache for that key, if the cache
-hits, just respond the client and terminate.</li>
-<li>else if the cache misses, bObject server get the target address of
-backend &quot;auth&quot;, proxy an object request to that backend, put the
-success result into cache, respond the client and then end the
-request. Thus cache will hit at the next time.</li>
+<li>ObjPuller server try to lookup that key in the cache, if the cache
+hits, just respond the value to client and end query.</li>
+<li>else if the cache misses, ObjPuller server get the target address
+of backend named &quot;auth&quot;, send an object request to that backend,
+pull the result object and insert it into the cache, respond the
+client and then end the request. Thus cache will hit at the next
+time.</li>
 <li>when the object in a backend changes, the backend take in charge of
-purging the cache by requesting bObject server&#39;s interface.</li>
-<li>backends also provide query/mutation URLs as bObject&#39;s proxy
+purging the cache by requesting ObjPuller server&#39;s API.</li>
+<li>backends also provide query/mutation URLs as ObjPuller&#39;s proxy
 target, the response from them are checked to update cache.</li>
 </ol>
 <h2>Configure</h2><p>Sample yaml configuration is like</p>
@@ -87,7 +89,7 @@ backends:
     token: &quot;ffff&quot;
     target: &quot;https://exchange.example.com/datamodel/&quot;
 </code></pre>
-<h2>Concept</h2><p>bObject handles JSON objects, a basic entry is as simple as a JSON
+<h2>Concept</h2><p>ObjPuller handles JSON objects, a basic entry is as simple as a JSON
 objects with two fields</p>
 <ul>
 <li><code>oid</code>, oid is the identifier of an object, it follow the format
@@ -102,10 +104,11 @@ valid JSON documents.</li>
       &quot;name&quot;: &quot;tom&quot;,
       &quot;age&quot;: 28
       &quot;gender&quot;: &quot;female&quot;
-  }
+  },
+  &quot;expire&quot;: 10 // expire is optional, default is 0, which means never expire
 }
 </code></pre>
-<h2>Interfaces</h2><p>bObject can provide some more interfaces, including RESTful, JSONRPC,
+<h2>Interfaces</h2><p>ObjPuller can provide some more interfaces, including RESTful, JSONRPC,
 memcached protocol, thrift and gRPC, it can even be the basis of
 graphql server, here I only list a RESTful interface to make things
 simpler</p>
@@ -155,24 +158,28 @@ Backend server should provide an url
 GET :backend.target/:backend/:query
 </code></pre><p>Proxy a query action to backend, the valid response(following the
 entry format) will be saved to cache. Backend can also respond entries
-containing only <code>oid</code> field, bObject can automatically lookup there
+containing only <code>oid</code> field, ObjPuller can automatically lookup there
 data when needed.</p>
-<h3>Proxy mutation</h3><pre><code>POST /v1/mutation/:backend/:query
+<h3>Proxy mutation</h3><pre><code>POST /v1/mutation/:backend/:mutation
 C-&gt;S
 {
   // any JSON or form data
 }
 
 Backend server should provide an url 
-POST :backend.target/:backend/:query
+POST :backend.target/:backend/:mutation
 </code></pre><p>Proxy a query action to backend, the valid response(following the
 entry format) will be saved to cache. Backend can also respond entries
-containing only <code>oid</code> field, bObject can automatically lookup there
+containing only <code>oid</code> field, ObjPuller can automatically lookup their
 data when needed.</p>
-<h2>Pubsub changes</h2><p>Sometimes backends have to get notified when other cache changed, they
-can subscribe to a Redis channel /objects/change/:backend/:model, the
-received messages are</p>
-<pre><code class="language-json">{&quot;oid&quot;: &quot;relation/userfriends/1009&quot;, &quot;action&quot;: &quot;purge&quot;} // ation can be purge|update
+<h2>Pubsub changes</h2><p>Sometimes backends with to get notified when other relavent cache
+changed, they can subscribe to a websocket connection
+ws://<server>/objects/change/:backend, the received messages are a
+stream of entries.</server></p>
+<pre><code class="language-json">{
+  &quot;oid&quot;: &quot;relation/userfriends/1009&quot;,
+  &quot;data&quot;: ...
+}
 </code></pre>
         <div class="push"></div>
       </div>
