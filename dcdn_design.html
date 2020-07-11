@@ -104,6 +104,42 @@ borden of original servers is not liberated.
 
 <div id="outline-container-orge0138c1" class="outline-3">
 <h3 id="orge0138c1">Patterns show that Dynamic resources can be delivered too</h3>
+<div class="outline-text-3" id="text-orge0138c1">
+<p>
+Let's take the user authentication in distribute website environment
+for example.
+</p>
+
+<p>
+A user named 'Alice' logins to a auth server, domained
+<i>auth.example.com</i>, to get an auth token, auth server generates an
+Auth object for this token, which include user<sub>id</sub>, username, profile
+fields and so on.
+</p>
+
+<p>
+User Alice visits a content server using the auth token, once the
+content server get this token, it gets an Auth object from auth server
+using this token, if the Auth object is valid then user Alice is
+granted access to content server.
+</p>
+
+<p>
+Every time when Alice visits the content server, the content server
+consults auth server for access checking and information, this is safe
+but may enlarge the roundtrip time and downgrade user experience.
+</p>
+
+<p>
+How about content server maintains a cache of the Auth objects
+locally? The content server can accelerate user visits, in most cases
+this is sound since users' informations are seldom changed. However
+there is possibility when a user updates it's information at the auth
+server or is revoked accessibility by the auth server, the content
+server canot get notified in time, which leads to inconsistency and
+security leaks.
+</p>
+</div>
 </div>
 
 <div id="outline-container-org8b84b84" class="outline-3">
@@ -112,7 +148,7 @@ borden of original servers is not liberated.
 <p>
 When objects are deleted or updated, the users of them must get
 notified in time, or there will be unexpected behaviors. Thus a
-notification system must be set up to keep objects consistent
+notification system should be set up to keep objects consistent
 eventually.
 </p>
 </div>
@@ -158,7 +194,6 @@ order to make the data sound, two HTTP response headers are required,
 examples are
 </p>
 <ol class="org-ol">
-<li>X-DCDN-Ref: <code>/auth/token/cb624a50</code>, the object reference.</li>
 <li>X-DCDN-Action: set, the choices are 'set|purge'.</li>
 <li>X-DCDN-Expiration: 100, expire after 100 seconds, the default
 expiration value is 3600 seconds.</li>
