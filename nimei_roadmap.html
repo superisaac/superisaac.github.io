@@ -1,0 +1,390 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>NIMEI proxy, the design and roadmap</title>
+<meta name="generator" content="Org mode" />
+<link rel="stylesheet" type="text/css" href="css/blogstyle.css" />
+<meta name="keywords" content="nim, protocol, network, internet, gRPC, HTTP2">
+<script type="text/javascript">
+/*
+@licstart  The following is the entire license notice for the
+JavaScript code in this tag.
+
+Copyright (C) 2012-2019 Free Software Foundation, Inc.
+
+The JavaScript code in this tag is free software: you can
+redistribute it and/or modify it under the terms of the GNU
+General Public License (GNU GPL) as published by the Free Software
+Foundation, either version 3 of the License, or (at your option)
+any later version.  The code is distributed WITHOUT ANY WARRANTY;
+without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE.  See the GNU GPL for more details.
+
+As additional permission under GNU GPL version 3 section 7, you
+may distribute non-source (e.g., minimized or compacted) forms of
+that code without the copy of the GNU GPL normally required by
+section 4, provided you include this license notice and a URL
+through which recipients can access the Corresponding Source.
+
+
+@licend  The above is the entire license notice
+for the JavaScript code in this tag.
+*/
+<!--/*--><![CDATA[/*><!--*/
+ function CodeHighlightOn(elem, id)
+ {
+   var target = document.getElementById(id);
+   if(null != target) {
+     elem.cacheClassElem = elem.className;
+     elem.cacheClassTarget = target.className;
+     target.className = "code-highlighted";
+     elem.className   = "code-highlighted";
+   }
+ }
+ function CodeHighlightOff(elem, id)
+ {
+   var target = document.getElementById(id);
+   if(elem.cacheClassElem)
+     elem.className = elem.cacheClassElem;
+   if(elem.cacheClassTarget)
+     target.className = elem.cacheClassTarget;
+ }
+/*]]>*///-->
+</script>
+</head>
+<body>
+<div id="content">
+<h1 class="title">NIMEI proxy, the design and roadmap</h1>
+<p>
+Created at: 2020-06-20 <a href="index.html">Index</a> 
+</p>
+
+<div id="outline-container-orgbe68b1f" class="outline-2">
+<h2 id="orgbe68b1f">Idea of NIMEI</h2>
+<div class="outline-text-2" id="text-orgbe68b1f">
+</div>
+<div id="outline-container-org178c5e2" class="outline-3">
+<h3 id="org178c5e2">The problem</h3>
+<div class="outline-text-3" id="text-org178c5e2">
+<p>
+There are tons of programming languages in the world. Once created, a
+language has to be able to communicate via internet for real world
+cases, so it has to parse network protocols, either using libraries
+in C/C++ or developing protocol parsers in itself along. Parsing
+procedures tend to be hard for modern protocols such as HTTP2, RSocket
+and QUIC. Programming language designers are usually not networking
+experts, they also has many stuffs to handle during the Genesis. Lack
+of appropriate parsers may eventually undermine their adoption in the
+developers' zoo, since most developers tend to accept out-of-box
+solutions.
+</p>
+
+<p>
+Even if a language has a good protocol support, different network
+protocols and libraries expose symantics gaps and coding conventions,
+Developers have to follow those conventions by reading documents and
+examples, which leads to non-standard codes and prolonged development
+sprint.
+</p>
+
+<p>
+The complexity of protocol adoptions is the num of programming
+languages <b>multiplies</b> the num of network protocols, such natural
+selection may kill many innovative languages. Using NIMEI reduced the
+complexity to the num of programming languages <b>plus</b> the num of
+network protocols.
+</p>
+</div>
+</div>
+
+<div id="outline-container-orgc7a2d4f" class="outline-3">
+<h3 id="orgc7a2d4f">The NIMEI solution</h3>
+<div class="outline-text-3" id="text-orgc7a2d4f">
+<p>
+NIMEI proxy provides a new paradigm of possible solutions, let's have
+a proxy between application and network peer, it handles traditional
+client-to-server and server-to-client connections on one side, and
+translates packets of them to/from protocolbuf messages and talks to
+applications on the other side.
+</p>
+
+<p>
+Protobuf messages are strongly typed, compact, easy to extend and easy
+to map to language data structures.  The NIMEI proxy, as a middle man
+or say translator, talks to application in protobuf and talks to
+external connections in their specific protocols, applications in
+language only have to implement protobuf message decoding/encoding.
+</p>
+</div>
+</div>
+
+<div id="outline-container-orga2cb556" class="outline-3">
+<h3 id="orga2cb556">The arch diagram</h3>
+<div class="outline-text-3" id="text-orga2cb556">
+
+<div class="figure">
+<p><img src="image/nimei_arch.png" alt="nimei_arch.png" />
+</p>
+</div>
+</div>
+</div>
+</div>
+
+<div id="outline-container-orgfaf05c4" class="outline-2">
+<h2 id="orgfaf05c4">Examples</h2>
+<div class="outline-text-2" id="text-orgfaf05c4">
+<p>
+For simplicity, the literal 'A' stands for Application, 'N' stands for
+NIMEI proxy and 'P' stands for connect peers in the outside world, P is the
+client if A is a server and vice versa.
+</p>
+</div>
+
+<div id="outline-container-orgf560e61" class="outline-3">
+<h3 id="orgf560e61">Connect a HTTP server, A -&gt; N -&gt; P</h3>
+<div class="outline-text-3" id="text-orgf560e61">
+<div class="org-src-container">
+<pre class="src src-python"><span style="color: #b22222;"># </span><span style="color: #b22222;">A -&gt; N</span>
+<span style="color: #b22222;">#</span>
+<span style="color: #b22222;"># </span><span style="color: #b22222;">c is a TCP connection from A to N while s is a stream within the</span>
+<span style="color: #b22222;"># </span><span style="color: #b22222;">connection</span>
+<span style="color: #b22222;">#</span>
+<span style="color: #b22222;"># </span><span style="color: #b22222;">connect to http://some.website.com:80, protocol is HTTP</span>
+c -&gt; Dail(<span style="color: #8b2252;">"http1.1"</span>, <span style="color: #8b2252;">"some.website.com"</span>, 80)
+<span style="color: #b22222;"># </span><span style="color: #b22222;">connected, peer is the ip of some.website.com</span>
+s :&lt;- stream.New(peer=<span style="color: #8b2252;">"1.23.45.67:80"</span>)
+<span style="color: #b22222;"># </span><span style="color: #b22222;">NIMEI turns the packet into "GET / HTTP/1.1\r\n"</span>
+s -&gt; http.RequestLine(method=<span style="color: #8b2252;">"GET"</span>, path=<span style="color: #8b2252;">"/"</span>)
+<span style="color: #b22222;"># </span><span style="color: #b22222;">NIMEI turns the packet into "Host: some.website.com\r\n"</span>
+s -&gt; http.Header(key=<span style="color: #8b2252;">"Host"</span>, value=<span style="color: #8b2252;">"some.website.com"</span>)
+<span style="color: #b22222;"># </span><span style="color: #b22222;">NIMEI turns the packet into "\r\n\r\n"</span>
+s -&gt; http.EndHeader()
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-orgad97f90" class="outline-3">
+<h3 id="orgad97f90">Listen as a webserver, A -&gt; N; P -&gt; N -&gt; A</h3>
+<div class="outline-text-3" id="text-orgad97f90">
+<div class="org-src-container">
+<pre class="src src-python"><span style="color: #b22222;"># </span><span style="color: #b22222;">A -&gt; N require NIMEI to open a proxy and redirect all traffic to</span>
+<span style="color: #b22222;"># </span><span style="color: #b22222;">this connection the listener port will always be hold until</span>
+<span style="color: #b22222;"># </span><span style="color: #b22222;">connections is broken or A calls Close() method</span>
+c -&gt; Listen(<span style="color: #8b2252;">"http1.1"</span>, <span style="color: #8b2252;">"0.0.0.0"</span>, 8080)
+
+<span style="color: #b22222;"># </span><span style="color: #b22222;">N -&gt; A</span>
+<span style="color: #b22222;"># </span><span style="color: #b22222;">A new connection is accepted</span>
+s :&lt;- stream.New(peer=<span style="color: #8b2252;">"192.168.1.237:28417"</span>)
+<span style="color: #b22222;"># </span><span style="color: #b22222;">NIMEI turns the packet into "GET /?a=b HTTP/1.1\r\n"</span>
+s &lt;- http.RequestLine(method=<span style="color: #8b2252;">"GET"</span>, path=<span style="color: #8b2252;">"/?a=b"</span>)
+<span style="color: #b22222;"># </span><span style="color: #b22222;">NIMEI turns the packet into "Host: some.website.com\r\n"</span>
+s &lt;- http.Header(key=<span style="color: #8b2252;">"Host"</span>, value=<span style="color: #8b2252;">"some.website.com"</span>)
+<span style="color: #b22222;"># </span><span style="color: #b22222;">NIMEI turns the packet into "\r\n\r\n"</span>
+s &lt;- http.EndHeader()
+
+<span style="color: #b22222;"># </span><span style="color: #b22222;">The original line is "HTTP/1.1 200 OK\r\n"</span>
+s -&gt; http.StatusLine(code=200, version=<span style="color: #8b2252;">"HTTP/1.1"</span>)
+s -&gt; http.Header(key=<span style="color: #8b2252;">"Content-Length"</span>, value=<span style="color: #8b2252;">"5"</span>)
+s -&gt; http.EndHeader()
+s -&gt; http.Data(data=<span style="color: #8b2252;">"hello"</span>)
+s -&gt; http.Header(key=<span style="color: #8b2252;">"User-Agent"</span>, value=<span style="color: #8b2252;">"Bad"</span>) <span style="color: #b22222;"># </span><span style="color: #b22222;">bad protocol error</span>
+<span style="color: #b22222;"># </span><span style="color: #b22222;">close the stream</span>
+s -&gt; stream.Close()
+</pre>
+</div>
+</div>
+</div>
+</div>
+
+<div id="outline-container-orgec19701" class="outline-2">
+<h2 id="orgec19701">Design considerations</h2>
+<div class="outline-text-2" id="text-orgec19701">
+</div>
+<div id="outline-container-org3b33171" class="outline-3">
+<h3 id="org3b33171">Why use nim?</h3>
+<div class="outline-text-3" id="text-org3b33171">
+<ol class="org-ol">
+<li>Nim has very small footprint and easy to program</li>
+<li>Nim compiles to C language, Android and iOS and even Flutter all
+support interaction with C language, so nim can be embeded as a
+library to skip the network round trip. In this case traffics
+between Application and NIMEI proxy are made as simple as function
+calls and callbacks.</li>
+<li>Nim is an interesting language with advanced syntax such as macros.
+The expressiveness makes it is comparable to modern languages such
+as Rust, Go, Kotlin and Swift.</li>
+<li>The Nim ecosystem lacks library support, to write code in it brings
+relatively more sense of accomplishment.</li>
+</ol>
+</div>
+</div>
+
+<div id="outline-container-org99dfff0" class="outline-3">
+<h3 id="org99dfff0">Transport layer implementation</h3>
+<div class="outline-text-3" id="text-org99dfff0">
+<p>
+The traffic between Application and NIMEI can be implemented above the
+following stacks.
+</p>
+
+<ol class="org-ol">
+<li>Unix domain socket, effective but limited to local machine</li>
+<li>Protobuf over Websocket, both technologies are well adopted and can
+be moved to browsers.</li>
+<li>gRPC, natively play with protobuf, but there should be envolop
+messages, can run within web using gRPC-Web.</li>
+<li>RSocket, RSocket has backpressure and reactive streaming support,
+but language support is not rich.</li>
+<li>In process function call and callbacks, this mode is suitable for
+mobile interactions and localhost connectivity.</li>
+</ol>
+</div>
+</div>
+
+<div id="outline-container-org4135099" class="outline-3">
+<h3 id="org4135099">Wire protocol over TCP</h3>
+<div class="outline-text-3" id="text-org4135099">
+<ol class="org-ol">
+<li><b>connection</b>, the application issues a connection to NIMEI to let
+NIMEI talk to external peers and also exchange data with NIMEI.</li>
+<li><b>session</b>, the state of conversation maintained between application
+and NIMEI, usually a session has one connection, but it is also
+possible to have multiple connections or even span connections.</li>
+<li><b>client id</b>, client id is a string or number generated by
+aplication side and is unique to the application side during the
+connection/session.</li>
+<li><b>stream id</b>, stream id is a string or number genreated by NIMEI
+side and is unique to NIMEI side during the connection/session. The
+stream is a map of a protocol's stream between NIMEEI and a peer,
+for those protocols that aren't aware of the stream concept the
+stream maps to a network connection. For example, HTTP/2 and
+RSocket has streams, so their streams map to wire protocol's stream
+naturally; HTTP/1.1 doesn't have stream, hense an HTTP/1.1
+connection maps to one stream within wire protocol's connection.</li>
+</ol>
+
+<p>
+The A/N protocol is a hybrid protocol made up of text lines and binary
+payloads which leverages performance and readibility.
+</p>
+
+<div class="org-src-container">
+<pre class="src src-shell"><span style="color: #b22222;"># </span><span style="color: #b22222;">A -&gt; N</span>
+<span style="color: #b22222;"># </span><span style="color: #b22222;">The first message</span>
+<span style="color: #b22222;"># </span><span style="color: #b22222;">VERSION &lt;ver&gt;\r\n</span>
+VERSION 1.0
+
+<span style="color: #b22222;"># </span><span style="color: #b22222;">A -&gt; N</span>
+<span style="color: #b22222;"># </span><span style="color: #b22222;">LISTEN &lt;client id&gt; &lt;protocol&gt; &lt;listen address&gt; &lt;port&gt; &lt;*args&gt;\r\n</span>
+LISTEN 1 http1.1 0.0.0.0 8000 reuseaddr
+
+<span style="color: #b22222;"># </span><span style="color: #b22222;">A -&gt; N</span>
+<span style="color: #b22222;"># </span><span style="color: #b22222;">DAIL &lt;client id&gt; &lt;protocol&gt; &lt;address&gt; &lt;port&gt; &lt;*args&gt;\r\n</span>
+DAIL 2 http1.1 some.website.com 80 tls tls.cert=/etc/cert/cert.pem
+
+<span style="color: #b22222;"># </span><span style="color: #b22222;">A &lt;- N</span>
+<span style="color: #b22222;"># </span><span style="color: #b22222;">ERR &lt;client id&gt; &lt;code&gt; &lt;msg&gt;\r\n</span>
+ERR 2 417 connect failed
+
+<span style="color: #b22222;"># </span><span style="color: #b22222;">A &lt;- N</span>
+<span style="color: #b22222;"># </span><span style="color: #b22222;">CONNECTED &lt;client id&gt; &lt;stream id&gt; &lt;peer address&gt;\r\n</span>
+CONNECTED 2 1001 1.23.45.68:80
+
+<span style="color: #b22222;"># </span><span style="color: #b22222;">A &lt;- N</span>
+<span style="color: #b22222;"># </span><span style="color: #b22222;">PING\r\n</span>
+PING
+
+<span style="color: #b22222;"># </span><span style="color: #b22222;">A -&gt; N</span>
+<span style="color: #b22222;"># </span><span style="color: #b22222;">PONG\r\n</span>
+PONG
+
+<span style="color: #b22222;"># </span><span style="color: #b22222;">A -&gt; N</span>
+<span style="color: #b22222;"># </span><span style="color: #b22222;">DATA &lt;stream id&gt; &lt;message kind&gt; *&lt;message length&gt;\r\n&lt;message payload&gt;\r\n</span>
+DATA 1001 http.RequestLine *203
+&lt;payload of 203 bytes&gt;
+
+<span style="color: #b22222;"># </span><span style="color: #b22222;">A &lt;- N, Got notified that the stream is closed by remote peer</span>
+<span style="color: #b22222;"># </span><span style="color: #b22222;">CLOSED &lt;stream id&gt;\r\n</span>
+CLOSED 1001
+
+<span style="color: #b22222;"># </span><span style="color: #b22222;">A -&gt; N, Actively close the stream</span>
+<span style="color: #b22222;"># </span><span style="color: #b22222;">CLOSE &lt;stream id&gt;\r\n</span>
+CLOSE 1001
+
+</pre>
+</div>
+</div>
+</div>
+
+
+<div id="outline-container-org7dce0c2" class="outline-3">
+<h3 id="org7dce0c2">Transport security layer</h3>
+<div class="outline-text-3" id="text-org7dce0c2">
+<p>
+NIMEI proxy handles TLS traffic on behalf of applications in order to
+simplify their job. Two things have to be handled.
+</p>
+<ol class="org-ol">
+<li>At the first step, NIMEI can have only one global TLS cert/key file
+settings to simplify the whole things up.</li>
+<li>Application can specify the TLS certs and pkeys using arguments.</li>
+<li>Application can upload their own certs and pkeys to NIMEI proxy and
+update them later.</li>
+</ol>
+</div>
+</div>
+
+<div id="outline-container-org0de117a" class="outline-3">
+<h3 id="org0de117a">API, Monitor and circult-breaker</h3>
+<div class="outline-text-3" id="text-org0de117a">
+<ol class="org-ol">
+<li>NIMEI will export prometheus metrics, including both CPU/Memory/IO
+related messages and connections and other metrics.</li>
+<li>The circult-break and backpressure mechanism and API to control
+traffic throughput.</li>
+<li>There will be a user friendly dashboard.</li>
+</ol>
+</div>
+</div>
+</div>
+
+<div id="outline-container-org1b47d3d" class="outline-2">
+<h2 id="org1b47d3d">Roadmap</h2>
+<div class="outline-text-2" id="text-org1b47d3d">
+<ol class="org-ol">
+<li>Build simple HTTP server using nim, to learn coding in nim.</li>
+<li>Protobuf file parser and code generator in nim, this can be a
+dedicated project to write a protoc plugin, using Python is simple
+enough.</li>
+<li>Build as shared library, calls and callbacks.</li>
+<li>Implement wire protocol over normal TCP.</li>
+<li>Implement wire protocol over Websocket, run the project in browser.</li>
+<li>HTTP2 protocol parser in nim, server and client.</li>
+<li>Implement wire protocol over gRPC.</li>
+<li>TLS support and cert upload.</li>
+</ol>
+</div>
+</div>
+
+<div id="outline-container-orgd214237" class="outline-2">
+<h2 id="orgd214237">The future</h2>
+<div class="outline-text-2" id="text-orgd214237">
+<ol class="org-ol">
+<li>Can NIMEI model be the message passing core of microkernel
+operating system?</li>
+<li>Can NIMEI model be used by tech stacks like k8s or serverless or
+faas?</li>
+</ol>
+</div>
+</div>
+</div>
+<div id="postamble" class="status">
+<p class="validation"></p>
+</div>
+</body>
+</html>

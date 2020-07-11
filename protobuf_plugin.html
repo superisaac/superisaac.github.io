@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Inspect protobuf plugins</title>
+<meta name="generator" content="Org mode" />
+<link rel="stylesheet" type="text/css" href="css/blogstyle.css" />
+<meta name="keywords" content="protobuf, gRPC, plugin">
+<meta name="description" content="inspect on how protobuf plugin works.">
+<script type="text/javascript">
+/*
+@licstart  The following is the entire license notice for the
+JavaScript code in this tag.
+
+Copyright (C) 2012-2019 Free Software Foundation, Inc.
+
+The JavaScript code in this tag is free software: you can
+redistribute it and/or modify it under the terms of the GNU
+General Public License (GNU GPL) as published by the Free Software
+Foundation, either version 3 of the License, or (at your option)
+any later version.  The code is distributed WITHOUT ANY WARRANTY;
+without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE.  See the GNU GPL for more details.
+
+As additional permission under GNU GPL version 3 section 7, you
+may distribute non-source (e.g., minimized or compacted) forms of
+that code without the copy of the GNU GPL normally required by
+section 4, provided you include this license notice and a URL
+through which recipients can access the Corresponding Source.
+
+
+@licend  The above is the entire license notice
+for the JavaScript code in this tag.
+*/
+<!--/*--><![CDATA[/*><!--*/
+ function CodeHighlightOn(elem, id)
+ {
+   var target = document.getElementById(id);
+   if(null != target) {
+     elem.cacheClassElem = elem.className;
+     elem.cacheClassTarget = target.className;
+     target.className = "code-highlighted";
+     elem.className   = "code-highlighted";
+   }
+ }
+ function CodeHighlightOff(elem, id)
+ {
+   var target = document.getElementById(id);
+   if(elem.cacheClassElem)
+     elem.className = elem.cacheClassElem;
+   if(elem.cacheClassTarget)
+     target.className = elem.cacheClassTarget;
+ }
+/*]]>*///-->
+</script>
+</head>
+<body>
+<div id="content">
+<h1 class="title">Inspect protobuf plugins</h1>
+<p>
+Created at: 2020-07-02 <a href="index.html">Index</a>
+</p>
+
+<div id="outline-container-org453d4b2" class="outline-2">
+<h2 id="org453d4b2">Nots on protobuf plugin.</h2>
+<div class="outline-text-2" id="text-org453d4b2">
+</div>
+<div id="outline-container-orgd898c7f" class="outline-3">
+<h3 id="orgd898c7f">Plugins are executable programs</h3>
+<div class="outline-text-3" id="text-orgd898c7f">
+<p>
+Protoc find a plugin from command line arguments, for example
+</p>
+
+<div class="org-src-container">
+<pre class="src src-shell">% protoc -I src --go_out=dest/
+</pre>
+</div>
+
+<p>
+The above command line has an argument <code>--go_out</code>, protoc get it and
+guess that the word <i>"go"</i> is a plugin, then it search through the PATH
+environment variable to find an executable named <i>"protoc-gen-go"</i>, if the
+executable program exists then it is considered a plugin to compile
+<i>.proto</i> files into golang source codes.
+</p>
+</div>
+</div>
+
+<div id="outline-container-org375cd02" class="outline-3">
+<h3 id="org375cd02">Feed plugin via stdin</h3>
+<div class="outline-text-3" id="text-org375cd02">
+<p>
+Once a plugin is found, protoc spawn a process of the plugin, parse
+input <i>.proto</i> files into descriptors and send them to plugin process
+via stdin.
+</p>
+</div>
+</div>
+
+<div id="outline-container-orge11fb5b" class="outline-3">
+<h3 id="orge11fb5b">Input and Output data are also protobuf messages</h3>
+<div class="outline-text-3" id="text-orge11fb5b">
+<p>
+Protoc gives the plugin process a chunk of data of the protobuf type
+<span class="underline">CodeGeneratorRequest</span>, which has details of parsed <i>.proto</i> file and
+all kinds of descriptors including the AST, and then expect a response
+of the protobuf type <span class="underline">CodeGeneratorResponse</span>.
+</p>
+
+<p>
+Both message types are defined in the url <a href="https://github.com/protocolbuffers/protobuf/blob/master/src/google/protobuf/compiler/plugin.proto">pluin.proto</a>.
+</p>
+</div>
+</div>
+
+<div id="outline-container-org65e61a1" class="outline-3">
+<h3 id="org65e61a1">Plugins add no limit on language choices.</h3>
+<div class="outline-text-3" id="text-org65e61a1">
+<p>
+Since plugins are normal executable programs, it's possible to write
+code generators of languages using another language. Some languange's
+protobuf stubs can be build using simpler bootstrap languages such as
+Python or any of the favoriate languages that already support
+protobuf.
+</p>
+</div>
+</div>
+
+<div id="outline-container-orgd3144f4" class="outline-3">
+<h3 id="orgd3144f4">References</h3>
+<div class="outline-text-3" id="text-orgd3144f4">
+<p>
+There are example projects using Python, a typical one is <a href="https://github.com/googleapis/protoc-docs-plugin.git">protoc-docs-plugin</a>.
+</p>
+</div>
+</div>
+</div>
+</div>
+<div id="postamble" class="status">
+<p class="validation"></p>
+</div>
+</body>
+</html>

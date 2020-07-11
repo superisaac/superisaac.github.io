@@ -1,0 +1,253 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Dynamic CDN, design</title>
+<meta name="generator" content="Org mode" />
+<link rel="stylesheet" type="text/css" href="css/blogstyle.css" />
+<meta name="keywords" content="CDN, dynamic, gRPC, API">
+<meta name="description" content="dynamic content delivery network.">
+<script type="text/javascript">
+/*
+@licstart  The following is the entire license notice for the
+JavaScript code in this tag.
+
+Copyright (C) 2012-2019 Free Software Foundation, Inc.
+
+The JavaScript code in this tag is free software: you can
+redistribute it and/or modify it under the terms of the GNU
+General Public License (GNU GPL) as published by the Free Software
+Foundation, either version 3 of the License, or (at your option)
+any later version.  The code is distributed WITHOUT ANY WARRANTY;
+without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE.  See the GNU GPL for more details.
+
+As additional permission under GNU GPL version 3 section 7, you
+may distribute non-source (e.g., minimized or compacted) forms of
+that code without the copy of the GNU GPL normally required by
+section 4, provided you include this license notice and a URL
+through which recipients can access the Corresponding Source.
+
+
+@licend  The above is the entire license notice
+for the JavaScript code in this tag.
+*/
+<!--/*--><![CDATA[/*><!--*/
+ function CodeHighlightOn(elem, id)
+ {
+   var target = document.getElementById(id);
+   if(null != target) {
+     elem.cacheClassElem = elem.className;
+     elem.cacheClassTarget = target.className;
+     target.className = "code-highlighted";
+     elem.className   = "code-highlighted";
+   }
+ }
+ function CodeHighlightOff(elem, id)
+ {
+   var target = document.getElementById(id);
+   if(elem.cacheClassElem)
+     elem.className = elem.cacheClassElem;
+   if(elem.cacheClassTarget)
+     target.className = elem.cacheClassTarget;
+ }
+/*]]>*///-->
+</script>
+</head>
+<body>
+<div id="content">
+<h1 class="title">Dynamic CDN, design</h1>
+<p>
+Created at: 2020-07-06 <a href="index.html">Index</a>
+</p>
+
+<div id="outline-container-orge76e27d" class="outline-2">
+<h2 id="orge76e27d">Notes</h2>
+<div class="outline-text-2" id="text-orge76e27d">
+</div>
+<div id="outline-container-orgc28ef7a" class="outline-3">
+<h3 id="orgc28ef7a">Current Content delivery networks</h3>
+<div class="outline-text-3" id="text-orgc28ef7a">
+<p>
+Traditional CDNs deliver static resources, such as images, css, js and
+video files, to the location where they are needed. The reason why CDN
+works is based on the factor that resources are immutable, their
+content need not be changed, if you want to make a change then just
+create another resource and switch the reference to the new one. the
+reference is usually a dynamic html page or an API called dynamic
+resource.
+</p>
+
+<p>
+Using CDN can drastically reduce the load of original servers, make
+the website scale and extensible and inhance the experience of user
+interactions.
+</p>
+</div>
+</div>
+
+<div id="outline-container-org8378966" class="outline-3">
+<h3 id="org8378966">Dynamic resources cannot use CDN</h3>
+<div class="outline-text-3" id="text-org8378966">
+<p>
+Dynamic resources are exposed via APIs, they are managed by databases
+and may change at any time, therefore they cannot be delivered by CDN
+to outside world, current CDN services provide rather a dedicated
+network instead of real content delivery for dynamic ranges. The
+borden of original servers is not liberated.
+</p>
+</div>
+</div>
+
+<div id="outline-container-orge0138c1" class="outline-3">
+<h3 id="orge0138c1">Patterns show that Dynamic resources can be delivered too</h3>
+</div>
+
+<div id="outline-container-org8b84b84" class="outline-3">
+<h3 id="org8b84b84">Need a notification system</h3>
+<div class="outline-text-3" id="text-org8b84b84">
+<p>
+When objects are deleted or updated, the users of them must get
+notified in time, or there will be unexpected behaviors. Thus a
+notification system must be set up to keep objects consistent
+eventually.
+</p>
+</div>
+</div>
+</div>
+
+<div id="outline-container-orgb016e0f" class="outline-2">
+<h2 id="orgb016e0f">Dynamic CDN design</h2>
+<div class="outline-text-2" id="text-orgb016e0f">
+<p>
+The DCDN has two components
+</p>
+</div>
+
+<div id="outline-container-orge7eca4b" class="outline-3">
+<h3 id="orge7eca4b">K/V cache with backends</h3>
+<div class="outline-text-3" id="text-orge7eca4b">
+
+<div class="figure">
+<p><img src="image/dcdn_cache.png" alt="dcdn_cache.png" />
+</p>
+</div>
+
+<p>
+Like a normal kv cache system, DCDN has a local copy of objects, apps
+can get objects using special keys. For example, a special key is
+<code>/auth/token/cb624a50</code> first part <code>/auth/</code> is called section, the rest
+<code>token/cb624a50</code> is the reference of an object. the object it refers
+to can be in any form of BLOBS including JSON.
+</p>
+
+<p>
+If the cache by a key hits then objects mapped to it is returned
+directly, else the key is deligated to a HTTP backend, ie,
+<code>https://auth.example.com/token/cb624a50</code>, and when the result comes,
+the DCDN cache it locally and returns to users.
+</p>
+
+<p>
+A backend is a normal HTTP server, when it is called by a GET request,
+the valid response is any BLOB data, usually JSON format is used, In
+order to make the data sound, two HTTP response headers are required,
+examples are
+</p>
+<ol class="org-ol">
+<li>X-DCDN-Ref: <code>/auth/token/cb624a50</code>, the object reference.</li>
+<li>X-DCDN-Action: set, the choices are 'set|purge'.</li>
+<li>X-DCDN-Expiration: 100, expire after 100 seconds, the default
+expiration value is 3600 seconds.</li>
+</ol>
+
+<p>
+If the header X-DCDN-Action is <b>purge</b>, then the response payload is
+ignored and the local cache of kv cache is purged.
+</p>
+
+<p>
+The basic gRPC service is defined as 
+</p>
+
+<div class="org-src-container">
+<pre class="src src-protobuf"><span style="color: #a020f0;">service</span> <span style="color: #228b22;">Cache</span> {
+  <span style="color: #a020f0;">rpc</span> <span style="color: #0000ff;">Get</span>(GetRequest) <span style="color: #a020f0;">returns</span> (GetResponse);
+  <span style="color: #a020f0;">rpc</span> <span style="color: #0000ff;">MultiGet</span>(MultiGetRequest) <span style="color: #a020f0;">returns</span> (MultiGetResponse);  <span style="color: #b22222;">// </span><span style="color: #b22222;">Get multi objects in parallel.</span>
+}
+
+<span style="color: #a020f0;">message</span> <span style="color: #228b22;">GetRequest</span> {
+  <span style="color: #228b22;">string</span> <span style="color: #a0522d;">key</span> = 1;
+}
+
+<span style="color: #a020f0;">message</span> <span style="color: #228b22;">GetResponse</span> {
+  <span style="color: #228b22;">string</span> <span style="color: #a0522d;">key</span> = 1;
+  <span style="color: #228b22;">bool</span> <span style="color: #a0522d;">found</span> = 2;
+  <span style="color: #228b22;">bytes</span> <span style="color: #a0522d;">data</span> = 3;   <span style="color: #b22222;">// </span><span style="color: #b22222;">if found is false then data is empty blob</span>
+}
+
+<span style="color: #b22222;">// </span><span style="color: #b22222;">TODO: MultiGet</span>
+
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-orgdde32aa" class="outline-3">
+<h3 id="orgdde32aa">Push streams</h3>
+<div class="outline-text-3" id="text-orgdde32aa">
+
+<div class="figure">
+<p><img src="image/dcdn_push.png" alt="dcdn_push.png" />
+</p>
+</div>
+
+<p>
+Once an object is changed at a backend, users of it must be get
+notified, so the backend send the changed object to the hub service
+via Add(). The backend can tell cache servers to set the new updated
+value or purge it directly, the later action may drastically reduce
+the traffics.
+</p>
+
+<div class="org-src-container">
+<pre class="src src-protobuf">
+<span style="color: #a020f0;">service</span> <span style="color: #228b22;">Hub</span> {
+  <span style="color: #a020f0;">rpc</span> <span style="color: #0000ff;">Watch</span>(WatchRequest) <span style="color: #a020f0;">returns</span> (stream ObjectEntity);
+  <span style="color: #a020f0;">rpc</span> <span style="color: #0000ff;">Add</span>(AddRequest) <span style="color: #a020f0;">returns</span> (AddResponse); <span style="color: #b22222;">// </span><span style="color: #b22222;">Add an object entity</span>
+}
+
+<span style="color: #a020f0;">message</span> <span style="color: #228b22;">WatchRequest</span> {
+  <span style="color: #228b22;">string</span> <span style="color: #a0522d;">cursor</span> = 1;  <span style="color: #b22222;">// </span><span style="color: #b22222;">when the cursor is empty then the watcher</span>
+                      <span style="color: #b22222;">// </span><span style="color: #b22222;">starts at the tail</span>
+}
+
+<span style="color: #a020f0;">message</span> <span style="color: #228b22;">ObjectEntity</span> {
+  <span style="color: #228b22;">string</span> <span style="color: #a0522d;">cursor</span> = 1;
+  <span style="color: #228b22;">Object</span> <span style="color: #a0522d;">object</span> = 2;
+}
+
+<span style="color: #228b22;">mesasge</span> <span style="color: #a0522d;">Object</span> {
+  <span style="color: #228b22;">string</span> <span style="color: #a0522d;">key</span> = 1;
+  <span style="color: #a020f0;">enum</span> <span style="color: #228b22;">Action</span> {
+    SET = 0;
+    PURGE = 2;
+  }
+  <span style="color: #228b22;">Action</span> <span style="color: #a0522d;">action</span> = 2;
+  <span style="color: #228b22;">bytes</span> <span style="color: #a0522d;">data</span> = 3;
+}
+
+</pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div id="postamble" class="status">
+<p class="validation"></p>
+</div>
+</body>
+</html>
