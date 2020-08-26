@@ -224,7 +224,14 @@ The basic gRPC service is defined as:
   <span style="color: #228b22;">bytes</span> <span style="color: #a0522d;">data</span> = 3;   <span style="color: #b22222;">// </span><span style="color: #b22222;">if found is false then data is empty blob</span>
 }
 
-<span style="color: #b22222;">// </span><span style="color: #b22222;">TODO: MultiGet</span>
+<span style="color: #a020f0;">message</span> <span style="color: #228b22;">MultiGetRequest</span> {
+  <span style="color: #a020f0;">repeated</span> <span style="color: #228b22;">string</span> <span style="color: #a0522d;">keys</span> = 1;
+  <span style="color: #228b22;">bool</span> <span style="color: #a0522d;">result_ordered</span> = 2;
+}
+
+<span style="color: #a020f0;">message</span> <span style="color: #228b22;">MultiGetResponse</span> {
+  <span style="color: #a020f0;">repeated</span> <span style="color: #228b22;">GetResponse</span> <span style="color: #a0522d;">response</span>;
+}
 
 </pre>
 </div>
