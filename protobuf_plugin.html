@@ -64,13 +64,13 @@ for the JavaScript code in this tag.
 Created at: 2020-07-02 <a href="index.html">Index</a>
 </p>
 
-<div id="outline-container-orgb44bdd7" class="outline-2">
-<h2 id="orgb44bdd7">Notes</h2>
-<div class="outline-text-2" id="text-orgb44bdd7">
+<div id="outline-container-org244f2d2" class="outline-2">
+<h2 id="org244f2d2">Notes</h2>
+<div class="outline-text-2" id="text-org244f2d2">
 </div>
-<div id="outline-container-orgd898c7f" class="outline-3">
-<h3 id="orgd898c7f">Plugins are executable programs</h3>
-<div class="outline-text-3" id="text-orgd898c7f">
+<div id="outline-container-org554c5f0" class="outline-3">
+<h3 id="org554c5f0">Plugins are executable programs</h3>
+<div class="outline-text-3" id="text-org554c5f0">
 <p>
 Protoc find a plugin from command line arguments, for example
 </p>
@@ -90,9 +90,9 @@ executable program exists then it is considered a plugin to compile
 </div>
 </div>
 
-<div id="outline-container-org375cd02" class="outline-3">
-<h3 id="org375cd02">Feed plugin via stdin</h3>
-<div class="outline-text-3" id="text-org375cd02">
+<div id="outline-container-orgf059bd8" class="outline-3">
+<h3 id="orgf059bd8">Feed plugin via stdin</h3>
+<div class="outline-text-3" id="text-orgf059bd8">
 <p>
 Once a plugin is found, protoc spawn a process of the plugin, parse
 input <i>.proto</i> files into descriptors and send them to plugin process
@@ -101,9 +101,9 @@ via stdin.
 </div>
 </div>
 
-<div id="outline-container-orge11fb5b" class="outline-3">
-<h3 id="orge11fb5b">Input and Output data are also protobuf messages</h3>
-<div class="outline-text-3" id="text-orge11fb5b">
+<div id="outline-container-org6345bf6" class="outline-3">
+<h3 id="org6345bf6">Input and Output data are also protobuf messages</h3>
+<div class="outline-text-3" id="text-org6345bf6">
 <p>
 Protoc gives the plugin process a chunk of data of the protobuf type
 <span class="underline">CodeGeneratorRequest</span>, which has details of parsed <i>.proto</i> file and
@@ -117,9 +117,9 @@ Both message types are defined in the url <a href="https://github.com/protocolbu
 </div>
 </div>
 
-<div id="outline-container-org65e61a1" class="outline-3">
-<h3 id="org65e61a1">Plugins add no limit on language choices.</h3>
-<div class="outline-text-3" id="text-org65e61a1">
+<div id="outline-container-orgaba1369" class="outline-3">
+<h3 id="orgaba1369">Plugins add no limit on language choices.</h3>
+<div class="outline-text-3" id="text-orgaba1369">
 <p>
 Since plugins are normal executable programs, it's possible to write
 code generators of languages using another language. Some languange's
@@ -130,9 +130,9 @@ protobuf.
 </div>
 </div>
 
-<div id="outline-container-orgd3144f4" class="outline-3">
-<h3 id="orgd3144f4">References</h3>
-<div class="outline-text-3" id="text-orgd3144f4">
+<div id="outline-container-org8780f15" class="outline-3">
+<h3 id="org8780f15">References</h3>
+<div class="outline-text-3" id="text-org8780f15">
 <p>
 There are example projects using Python, a typical one is <a href="https://github.com/googleapis/protoc-docs-plugin.git">protoc-docs-plugin</a>.
 </p>

@@ -64,13 +64,13 @@ for the JavaScript code in this tag.
 Created at: 2020-07-06 <a href="index.html">Index</a>
 </p>
 
-<div id="outline-container-orge76e27d" class="outline-2">
-<h2 id="orge76e27d">Notes</h2>
-<div class="outline-text-2" id="text-orge76e27d">
+<div id="outline-container-orgfa33299" class="outline-2">
+<h2 id="orgfa33299">Notes</h2>
+<div class="outline-text-2" id="text-orgfa33299">
 </div>
-<div id="outline-container-orgc28ef7a" class="outline-3">
-<h3 id="orgc28ef7a">Current Content delivery networks</h3>
-<div class="outline-text-3" id="text-orgc28ef7a">
+<div id="outline-container-orgf3318d3" class="outline-3">
+<h3 id="orgf3318d3">Current Content delivery networks</h3>
+<div class="outline-text-3" id="text-orgf3318d3">
 <p>
 Traditional CDNs deliver static resources, such as images, css, js and
 video files, to the location where they are needed. The reason why CDN
@@ -89,9 +89,9 @@ interactions.
 </div>
 </div>
 
-<div id="outline-container-org8378966" class="outline-3">
-<h3 id="org8378966">Dynamic resources cannot use CDN</h3>
-<div class="outline-text-3" id="text-org8378966">
+<div id="outline-container-org5100420" class="outline-3">
+<h3 id="org5100420">Dynamic resources cannot use CDN</h3>
+<div class="outline-text-3" id="text-org5100420">
 <p>
 Dynamic resources are exposed via APIs, they are managed by databases
 and may change at any time, therefore they cannot be delivered by CDN
@@ -102,9 +102,9 @@ borden of original servers is not liberated.
 </div>
 </div>
 
-<div id="outline-container-orge0138c1" class="outline-3">
-<h3 id="orge0138c1">Patterns show that Dynamic resources can be delivered too</h3>
-<div class="outline-text-3" id="text-orge0138c1">
+<div id="outline-container-orgacb2c9b" class="outline-3">
+<h3 id="orgacb2c9b">Patterns show that Dynamic resources can be delivered too</h3>
+<div class="outline-text-3" id="text-orgacb2c9b">
 <p>
 Let's take the user authentication in distribute website environment
 for example.
@@ -142,9 +142,9 @@ security leaks.
 </div>
 </div>
 
-<div id="outline-container-org8b84b84" class="outline-3">
-<h3 id="org8b84b84">Need a notification system</h3>
-<div class="outline-text-3" id="text-org8b84b84">
+<div id="outline-container-org3658fed" class="outline-3">
+<h3 id="org3658fed">Need a notification system</h3>
+<div class="outline-text-3" id="text-org3658fed">
 <p>
 When objects are deleted or updated, the users of them must get
 notified in time, or there will be unexpected behaviors. Thus a
@@ -155,17 +155,17 @@ eventually.
 </div>
 </div>
 
-<div id="outline-container-orgb016e0f" class="outline-2">
-<h2 id="orgb016e0f">Dynamic CDN design</h2>
-<div class="outline-text-2" id="text-orgb016e0f">
+<div id="outline-container-orgc43a80f" class="outline-2">
+<h2 id="orgc43a80f">Dynamic CDN design</h2>
+<div class="outline-text-2" id="text-orgc43a80f">
 <p>
 The DCDN has two components
 </p>
 </div>
 
-<div id="outline-container-orge7eca4b" class="outline-3">
-<h3 id="orge7eca4b">K/V cache with backends</h3>
-<div class="outline-text-3" id="text-orge7eca4b">
+<div id="outline-container-orgb7fd526" class="outline-3">
+<h3 id="orgb7fd526">K/V cache with backends</h3>
+<div class="outline-text-3" id="text-orgb7fd526">
 
 <div class="figure">
 <p><img src="image/dcdn_cache.png" alt="dcdn_cache.png" />
@@ -205,7 +205,7 @@ ignored and the local cache of kv cache is purged.
 </p>
 
 <p>
-The basic gRPC service is defined as 
+The basic gRPC service is defined as:
 </p>
 
 <div class="org-src-container">
@@ -230,9 +230,9 @@ The basic gRPC service is defined as
 </div>
 </div>
 
-<div id="outline-container-orge9df412" class="outline-4">
-<h4 id="orge9df412">Storage</h4>
-<div class="outline-text-4" id="text-orge9df412">
+<div id="outline-container-orgeb34527" class="outline-4">
+<h4 id="orgeb34527">Storage</h4>
+<div class="outline-text-4" id="text-orgeb34527">
 <p>
 Possible storage options can be
 </p>
@@ -245,9 +245,9 @@ Possible storage options can be
 </div>
 </div>
 
-<div id="outline-container-orgdde32aa" class="outline-3">
-<h3 id="orgdde32aa">Push streams</h3>
-<div class="outline-text-3" id="text-orgdde32aa">
+<div id="outline-container-org06faca6" class="outline-3">
+<h3 id="org06faca6">Push streams</h3>
+<div class="outline-text-3" id="text-org06faca6">
 
 <div class="figure">
 <p><img src="image/dcdn_push.png" alt="dcdn_push.png" />
@@ -279,7 +279,7 @@ the traffics.
   <span style="color: #228b22;">Object</span> <span style="color: #a0522d;">object</span> = 2;
 }
 
-<span style="color: #228b22;">mesasge</span> <span style="color: #a0522d;">Object</span> {
+<span style="color: #a020f0;">message</span> <span style="color: #228b22;">Object</span> {
   <span style="color: #228b22;">string</span> <span style="color: #a0522d;">key</span> = 1;
   <span style="color: #a020f0;">enum</span> <span style="color: #228b22;">Action</span> {
     SET = 0;
